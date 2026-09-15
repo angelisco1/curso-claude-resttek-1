@@ -162,3 +162,27 @@ export class OrderNotFoundError extends AppError {
   }
 }
 
+export class BugReportDescriptionRequiredError extends AppError {
+  constructor() {
+    super('La descripción del reporte es requerida')
+  }
+}
+
+export class BugReportDescriptionTooShortError extends AppError {
+  constructor() {
+    super('La descripción debe tener al menos 10 caracteres')
+  }
+}
+
+export class BugReportDescriptionTooLongError extends AppError {
+  constructor() {
+    super('La descripción no puede superar los 5000 caracteres')
+  }
+}
+
+export class GithubIssueCreationError extends AppError {
+  constructor() {
+    super('No se pudo crear la issue en GitHub', 502)
+  }
+}
+

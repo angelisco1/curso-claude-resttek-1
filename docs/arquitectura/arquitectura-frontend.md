@@ -107,6 +107,7 @@ export class DishStore {
 Caso particular en `web-empleados`:
 
 - `OrderStore` añade **polling cada 30 s** con `startPolling()` / `stopPolling()`, ya que la API no tiene websockets.
+- `BugReportStore` no guarda ninguna colección: expone `loading` / `error` / `created` para una única operación de escritura (ver "Feature `bug-reports`").
 
 ### `web-clientes`: el patrón Store casi no se usa
 
@@ -335,6 +336,45 @@ export class ShellComponent {
 ```
 
 El rol de gerente es `'manager'`, no `'gerente'`. La autorización real es responsabilidad de la API.
+
+La excepción es **"Reportar incidencia"**: su enlace se pinta sin `@if` de rol, porque está disponible para cualquier rol que entre al shell (`cocinero`, `camarero`, `manager`).
+
+---
+
+## Feature `bug-reports` (web-empleados)
+
+Permite que cualquier empleado autenticado describa un fallo de la aplicación y que la API abra automáticamente una issue en GitHub. Sigue el patrón estándar de `web-empleados` (`models/` + `services/` + `store/` + `pages/`), con el componente hablando **solo** con el store.
+
+```
+features/bug-reports/
+├── models/bug-report.model.ts          → CreateBugReportDto, BugReportCreated
+├── services/bug-report.service.ts      → POST ${environment.apiUrl}/bug-reports
+├── store/bug-report.store.ts           → signals loading / error / created
+└── pages/report-bug/report-bug.component.{ts,html,css}
+```
+
+**Contrato HTTP** — `POST /api/v1/bug-reports`. El cuerpo es únicamente `{ description }`; el empleado, su rol y su restaurante los deduce la API del JWT, que `authInterceptor` adjunta como `Authorization: Bearer`. Respuesta `201`:
+
+```ts
+export interface CreateBugReportDto { description: string }
+export interface BugReportCreated { issueNumber: number; issueUrl: string }
+```
+
+**Store.** Es el único store de `web-empleados` sin colección de datos: en vez del trío `loading` / `error` / lista, expone `loading` / `error` / `created` (`BugReportCreated | null`), y `created()` actúa de interruptor entre el formulario y la pantalla de éxito. `create()` sale pronto si ya está `loading()`, y `reset()` vuelve al formulario. El mensaje de `error` es fijo (`'No se pudo enviar el reporte. Inténtalo de nuevo en unos minutos.'`), sin exponer el detalle del `502` de la API.
+
+**Formulario.** Es el **primer formulario de `web-empleados`**: usa `FormsModule` con `[(ngModel)]` sobre un campo plano del componente (no una signal), igual que `ingredient-form.component.ts` de `web-admin`, que era hasta ahora el único formulario del monorepo con ese patrón. Detalles de UI exigidos por la spec de la issue #8:
+
+- `textarea` con `maxlength="5000"` y contador `N / 5000` debajo.
+- "Enviar reporte" deshabilitado si el texto está vacío tras `trim()` o mientras `loading()` (evita crear dos issues con un doble clic).
+- En éxito, el formulario se sustituye por `Reporte enviado. Se ha creado la issue #N.`, un enlace `Ver issue` (`target="_blank" rel="noopener"`) y un botón `Enviar otro reporte`.
+- En error, la alerta se muestra **conservando el texto del textarea** para que el empleado no lo pierda.
+- Aviso permanente en el formulario: `No incluyas datos de clientes ni contraseñas: el reporte se publica en un repositorio público.`
+
+Como el store es `providedIn: 'root'`, el componente llama a `reset()` en `ngOnDestroy()` para no reabrir la pantalla de éxito del reporte anterior al volver a entrar.
+
+**Navegación.** Ruta hija `reportar-incidencia` dentro de `ShellComponent` con `loadComponent`, y enlace en `.sidebar-nav` visible para todos los roles. Los iconos `Bug`, `Send` y `CheckCircle` se añaden al `LucideAngularModule.pick({...})` de `app.config.ts`.
+
+Esta feature solo existe en `web-empleados`: ni `web-admin` ni `web-clientes` tienen forma de reportar incidencias.
 
 ---
 
