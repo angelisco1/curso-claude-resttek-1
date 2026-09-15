@@ -44,6 +44,10 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
+      # Requerido por anthropics/claude-code-action: pide un token OIDC y lo
+      # intercambia por un token de la GitHub App. Sin esto el job aborta con
+      # "Unable to get ACTIONS_ID_TOKEN_REQUEST_URL env variable" antes de arrancar.
+      id-token: write
     steps:
       - name: Checkout (full history for diff)
         uses: actions/checkout@v4
