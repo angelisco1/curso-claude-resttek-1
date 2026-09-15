@@ -1,0 +1,103 @@
+name: PR Checks
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  build-and-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build web-admin
+        run: npm run build -w @resttek/web-admin
+
+      - name: Build web-empleados
+        run: npm run build -w @resttek/web-empleados
+
+      - name: Build web-clientes
+        run: npm run build -w @resttek/web-clientes
+
+      - name: Run API tests
+        run: npm test
+
+  docs-consistency-review:
+    name: Claude — Docs Consistency Review
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout (full history for diff)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Claude Code docs review
+        uses: anthropics/claude-code-action@v1
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: |
+            --max-turns 15
+            --allowedTools "Read,Grep,Glob,Bash(git diff:*),Bash(git log:*),Bash(git show:*),Bash(gh pr comment:*)"
+          prompt: |
+            You are reviewing pull request #${{ github.event.pull_request.number }} in the
+            "Resttek" monorepo (a restaurant management platform: admin panel, employee app,
+            customer app, and a Node/Express API).
+
+            Your job: check whether the code changes in this PR are still accurately described
+            by the project documentation in the `docs/` folder, and flag any drift.
+
+            Steps:
+            1. Run `git diff origin/${{ github.event.pull_request.base.ref }}...HEAD` (or
+               `git diff HEAD~1` if the base ref is unavailable) to see exactly what changed.
+               Read the full diff, not just file names.
+            2. For every changed file, identify which doc(s) under `docs/` describe that area:
+               - `docs/arquitectura/arquitectura-general.md` — monorepo layout, data flow, auth flow
+               - `docs/arquitectura/arquitectura-api.md` — backend architecture, endpoints, error handling, path aliases
+               - `docs/arquitectura/arquitectura-frontend.md` — frontend architecture, state patterns, interceptors
+               - `docs/dominio/modelo-datos.md` — SQLite schema
+               - `docs/dominio/glosario.md` — domain terms and roles
+               - `docs/revisiones/` — already-known doc-vs-code inconsistencies from prior audits;
+                 check here first so you don't re-report something already tracked
+            3. Read the relevant doc sections and compare them against the new code behavior.
+               Look specifically for: renamed/removed/added API endpoints or routes, changed
+               request/response shapes, changed DB schema/columns/tables, changed error-handling
+               behavior, changed auth/roles logic, changed frontend state/store patterns, changed
+               path aliases, or changed commands/scripts — anything a doc currently asserts that
+               the diff makes false or incomplete.
+            4. Ignore purely stylistic/formatting changes and anything already listed in
+               `docs/revisiones/`.
+
+            Output: post exactly one PR comment (do not post more than once) using:
+              gh pr comment ${{ github.event.pull_request.number }} --body "..."
+            The comment body must contain:
+            - A short verdict: "Docs look up to date" OR "Possible doc drift found".
+            - If drift was found, a bullet list where each bullet names the exact doc file
+              (with path) and section/claim affected, quotes or paraphrases the outdated
+              statement, and explains concretely what changed in the code that contradicts it.
+            - If you are not fully sure something is actually outdated (e.g. ambiguous or
+              hard to verify from the diff alone), say so explicitly and mark it as "needs
+              human check" rather than asserting it as fact.
+
+            Do not modify any files other than posting the PR comment. This is a read-only
+            code review; never edit files in the repository.
