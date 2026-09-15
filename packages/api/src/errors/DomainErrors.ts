@@ -32,7 +32,7 @@ export class InvalidEmailError extends AppError {
 
 export class InvalidCredentialsError extends AppError {
   constructor() {
-    super('Invalid credentials')
+    super('Invalid credentials', 401)
   }
 }
 
@@ -44,7 +44,7 @@ export class DuplicatedEmailError extends AppError {
 
 export class EmployeeNotFoundError extends AppError {
   constructor() {
-    super('Employee not found')
+    super('Employee not found', 404)
   }
 }
 
@@ -68,7 +68,7 @@ export class RestaurantEmailRequiredError extends AppError {
 
 export class RestaurantNotFoundError extends AppError {
   constructor() {
-    super('Restaurant not found')
+    super('Restaurant not found', 404)
   }
 }
 
@@ -98,7 +98,7 @@ export class IngredientNameRequiredError extends AppError {
 
 export class IngredientNotFoundError extends AppError {
   constructor() {
-    super('Ingredient not found')
+    super('Ingredient not found', 404)
   }
 }
 
@@ -140,7 +140,7 @@ export class InvalidCategoryError extends AppError {
 
 export class DishNotFoundError extends AppError {
   constructor() {
-    super('Dish not found')
+    super('Dish not found', 404)
   }
 }
 
