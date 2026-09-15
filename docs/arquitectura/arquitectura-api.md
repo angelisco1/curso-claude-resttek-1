@@ -326,6 +326,43 @@ Ninguna ruta de pedidos aplica `authorize()`: cualquier usuario autenticado pued
 
 Al crear un pedido, el servicio **expande las cantidades**: un ítem con `quantity: 3` se guarda como 3 filas de `order_items` con `quantity: 1` cada una, para poder seguir el estado de cada unidad por separado.
 
+### Reportes de bugs
+
+| Método | Ruta | Roles |
+| --- | --- | --- |
+| `POST` | `/api/v1/bug-reports` | cocinero, camarero, manager, admin |
+
+Único endpoint que habla con un servicio externo. Recibe `{ "description": string }` y nada más: `employeeId`, `role` y `restaurantId` se leen de `req.user` (el payload del JWT), no del body. La descripción se valida tras `trim()` (mínimo 10 y máximo 5000 caracteres) y con ella se compone una issue de GitHub que se crea ejecutando el binario `gh`:
+
+```
+gh issue create --repo <GITHUB_REPO> --title <título> --body <cuerpo> \
+   --label bug --label proyecto:web-empleados --label por-revisar
+```
+
+- **Título**: `[web-empleados] ` + primera línea de la descripción, recortada a 80 caracteres con `…` final si hizo falta.
+- **Cuerpo**: la descripción íntegra, un separador `---`, y el `employeeId`, el rol, el restaurante (`sin asignar` si es `null`) y la fecha ISO.
+- **Etiquetas**: constantes en `models/bug-report.model.ts` (`BUG_REPORT_LABELS`); el cliente no las elige. La etiqueta `por-revisar` debe existir en el repositorio destino o `gh` falla.
+- **Respuesta 201**: `{ "issueNumber": 42, "issueUrl": "https://github.com/.../issues/42" }`.
+- **Errores**: `400` (`BugReportDescriptionRequiredError`, `BugReportDescriptionTooShortError`, `BugReportDescriptionTooLongError`), `401` sin token, `403` para `cliente` y `502` (`GithubIssueCreationError`) si `gh` falla, no está instalado o supera el timeout de 15 s.
+
+El reporte **no se persiste**: no hay tabla `bug_reports` ni repositorio, GitHub es la única fuente de verdad. Por eso la frontera inyectable no es un `repositories/`, sino `services/issue-tracker.client.ts` (interfaz `IssueTracker` + implementación `GhCliIssueTracker`), con el doble `services/mocks/MockIssueTracker.ts` para los tests.
+
+`GhCliIssueTracker` usa `execFile` de `node:child_process` promisificado, **nunca `exec` ni `shell: true`**: los argumentos van en un array, así que el texto escrito por el empleado no lo interpreta ningún shell. El ejecutor de comandos es inyectable por constructor para poder testear sin lanzar `gh`.
+
+### Variables de entorno
+
+| Variable | Obligatoria | Descripción |
+| --- | --- | --- |
+| `PORT` | No (3000) | Puerto del servidor |
+| `JWT_SECRET` | No (valor por defecto en código) | Clave de firma de los JWT |
+| `NODE_ENV` | No | Con `test` la base de datos pasa a `:memory:` |
+| `GH_TOKEN` | Sí, para `POST /api/v1/bug-reports` | Token con permiso `issues: write` sobre el repositorio destino. Lo consume `gh` directamente |
+| `GITHUB_REPO` | No (`angelisco1/curso-claude-resttek-1`) | Valor de `--repo` en `gh issue create` |
+
+**Ojo**: hoy `server.ts` no carga ningún `.env`. `dotenv` figura como dependencia de `packages/api` pero no se importa en ninguna parte, así que estas variables tienen que estar exportadas en el entorno del proceso que arranca la API (`GH_TOKEN=... npm run dev:api`, o un `export` previo). Si en el futuro se añade `import 'dotenv/config'` a `server.ts`, pasarán a leerse de `packages/api/.env`, que está en `.gitignore`.
+
+La máquina que ejecute la API necesita además el binario `gh` instalado y autenticado; si falta, el endpoint de reportes responde `502` y el resto de la API sigue funcionando.
+
 ---
 
 ## Middlewares
@@ -343,16 +380,17 @@ Ambos responden directamente, sin pasar por el `errorHandler`.
 
 ## Gestión de Errores
 
-Jerarquía: `Error` → `AppError` (abstracta) → errores específicos en `errors/DomainErrors.ts`. `AppError` asigna `this.name = this.constructor.name`, y el `errorHandler` decide el código HTTP a partir de ese nombre:
+Jerarquía: `Error` → `AppError` (abstracta) → errores específicos en `errors/DomainErrors.ts`. `AppError` asigna `this.name = this.constructor.name` y expone un `statusCode` (400 por defecto) que cada subclase puede sobrescribir en su `super(...)`; el `errorHandler` se limita a responder con ese código y con `{ error: err.name, message: err.message }`:
 
 - **404**: `EmployeeNotFoundError`, `RestaurantNotFoundError`, `IngredientNotFoundError`, `DishNotFoundError`
 - **401**: `InvalidCredentialsError`
+- **502**: `GithubIssueCreationError` — único error del proyecto que representa el fallo de un servicio externo (GitHub vía `gh`). El detalle (`stderr` del comando) se escribe en `console.error` y **nunca** viaja en la respuesta HTTP
 - **400**: cualquier otro `AppError`
 - **500**: errores no controlados
 
 Dos excepciones que conviene conocer:
 
-- `OrderNotFoundError` **no** está en la lista de 404. Si llegase al `errorHandler` se traduciría a 400.
+- `OrderNotFoundError` **no** declara `statusCode` 404. Si llegase al `errorHandler` se traduciría a 400.
 - `OrderController` no delega en el `errorHandler`: es el único controlador que **no llama a `next(error)`**, sino que hace su propio `try/catch` y construye la respuesta a mano. Por eso `GET /orders/:id` sí devuelve 404, pero el `PATCH` de estado devuelve 400 para el mismo error.
 
 ---

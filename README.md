@@ -13,6 +13,37 @@ Esta guía te lleva desde cero hasta tener el entorno funcionando y entender el 
 | **Node.js** | 22+ | `node --version` |
 | **npm** | 10+ | `npm --version` |
 | **Git** | 2.40+ | `git --version` |
+| **GitHub CLI** (`gh`) | 2.40+ | `gh --version` |
+
+`gh` solo hace falta para el reporte de incidencias de la app de empleados (`POST /api/v1/bug-reports`), que crea la issue en GitHub ejecutando ese binario. Sin él, el resto de la API funciona igual y solo ese endpoint responde `502`.
+
+---
+
+## Variables de Entorno de la API
+
+| Variable | Obligatoria | Por defecto | Descripción |
+| --- | --- | --- | --- |
+| `PORT` | No | `3000` | Puerto del servidor |
+| `JWT_SECRET` | No | `super-secret-resttek-key` | Clave de firma de los JWT |
+| `NODE_ENV` | No | `development` | Con `test` la base de datos pasa a `:memory:` |
+| `GH_TOKEN` | Sí, para reportar incidencias | — | Token de GitHub con permiso `issues: write` sobre el repositorio destino. Lo consume `gh` directamente |
+| `GITHUB_REPO` | No | `angelisco1/curso-claude-resttek-1` | Repositorio donde se crean las issues de los reportes |
+
+`server.ts` **no carga ningún `.env`** todavía, así que estas variables hay que exportarlas en el entorno que arranca la API:
+
+```bash
+export GH_TOKEN="ghp_..."
+export GITHUB_REPO="angelisco1/curso-claude-resttek-1"   # opcional
+npm run dev:api
+```
+
+Usa un token con el alcance mínimo (`issues: write` sobre ese repositorio y nada más) y no lo comitees: `packages/api/.env` está en `.gitignore`.
+
+Antes de usar el reporte de incidencias por primera vez hay que crear la etiqueta `por-revisar` en el repositorio destino, porque `gh issue create` falla si se le pasa una etiqueta que no existe:
+
+```bash
+gh label create por-revisar --description "Reporte automático pendiente de triaje" --color "d4c5f9"
+```
 
 ---
 
