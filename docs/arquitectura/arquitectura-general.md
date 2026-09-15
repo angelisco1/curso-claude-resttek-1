@@ -105,7 +105,7 @@ Esto elimina problemas de CORS en desarrollo y simula el comportamiento de produ
 En la API conviven **dos estilos arquitectónicos**:
 
 - **Hexagonal con DDD** en el contexto `employee`: tres capas (Domain → Application → Infrastructure) bajo `src/contexts/employee/`.
-- **Por capas** en `restaurant`, `dish`, `ingredient` y `order`: carpetas transversales `models/`, `repositories/`, `services/`, `controllers/` y `routes/`.
+- **Por capas** en `restaurant`, `dish`, `ingredient`, `order` y `table`: carpetas transversales `models/`, `repositories/`, `services/`, `controllers/` y `routes/`.
 
 En ambos casos la capa HTTP (controladores y rutas) es un adaptador de entrada y el acceso a datos queda detrás de una interfaz de repositorio. Ver [Arquitectura de la API](./arquitectura-api.md) para detalles.
 

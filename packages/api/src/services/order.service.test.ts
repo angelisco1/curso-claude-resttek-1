@@ -17,6 +17,7 @@ describe('OrderService.updateItemStatus', () => {
             id: 'order-1',
             restaurantId: 'rest-1',
             tableId: null,
+            tableNumber: null,
             clientId: null,
             createdAt: new Date(),
             items: [

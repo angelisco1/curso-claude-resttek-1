@@ -3,7 +3,7 @@ import { provideRouter } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import {
   LucideAngularModule,
-  Utensils, ShoppingCart, User, LogOut, Store, ClipboardList
+  Utensils, ShoppingCart, User, LogOut, Store, ClipboardList, Armchair, Users
 } from 'lucide-angular'
 
 import { routes } from './app.routes';
@@ -19,7 +19,7 @@ export const appConfig: ApplicationConfig = {
     ),
     importProvidersFrom(
       LucideAngularModule.pick({
-        Utensils, ShoppingCart, User, LogOut, Store, ClipboardList
+        Utensils, ShoppingCart, User, LogOut, Store, ClipboardList, Armchair, Users
       })
     )
   ]

@@ -52,15 +52,16 @@ src/app/
 ├── app.routes.ts
 ├── core/
 │   ├── layout/            → shell.component.ts
-│   ├── models/            → dish, order, restaurant
-│   ├── services/          → dish, order, restaurant
+│   ├── models/            → dish, order, restaurant, table
+│   ├── services/          → dish, order, restaurant, table
 │   └── store/             → cart.store.ts
 └── features/
     ├── cart/cart.component.ts
     ├── menu/restaurant-menu.component.ts
     ├── orders/my-orders.component.ts
     ├── orders/order-detail.component.ts
-    └── restaurants/restaurant-list.component.ts
+    ├── restaurants/restaurant-list.component.ts
+    └── tables/table-selection.component.ts
 ```
 
 Ninguna de las tres aplicaciones tiene carpeta `shared/` propia: lo compartido vive en `@resttek/web-shared`.
@@ -112,9 +113,12 @@ Caso particular en `web-empleados`:
 
 En `web-clientes` el patrón Store **no es la norma**: el único store real es `CartStore`, y es puramente local (sin HTTP) — vacía el carrito si añades un plato de otro restaurante, pero no envuelve ninguna llamada a la API.
 
+`CartStore` guarda además la **mesa elegida** (`tableId`, `tableNumber`, `partySize` y el restaurante al que pertenecen). Esa parte sobrevive a `clear()`: confirmar un pedido vacía el carrito pero el grupo sigue sentado y puede volver a pedir. `hasTableFor(restaurantId)` es lo que usa `restaurant-menu.component.ts` para redirigir a la selección de mesa si se entra a la carta sin mesa.
+
 Para todo lo demás (restaurantes, carta/platos, confirmación y consulta de pedidos) los componentes de `features/` inyectan el `*Service` correspondiente directamente y llaman a sus métodos con `.subscribe({ next, error })`, sin pasar por ningún store ni por `firstValueFrom`:
 
 - `restaurant-list.component.ts` → `RestaurantService.getAll()`
+- `table-selection.component.ts` → `TableService.getAvailable()` al cambiar el número de comensales y `TableService.occupy()` al continuar
 - `restaurant-menu.component.ts` → `RestaurantService.getById()` y `DishService.getByRestaurant()`
 - `cart.component.ts` (`confirmOrder()`) → `OrderService.createOrder()`
 - `my-orders.component.ts` → `OrderService.getMyOrders()`, con **polling cada 10 s** mediante `setInterval`/`clearInterval` en el propio componente
@@ -328,6 +332,10 @@ export class ShellComponent {
     )
     readonly canSeeSalon = computed(() =>
         this.userRole() === 'camarero' || this.userRole() === 'manager'
+    )
+    readonly canSeeMesas = computed(() =>
+        this.userRole() === 'camarero' || this.userRole() === 'manager'
+            || this.userRole() === 'cocinero'
     )
 
     readonly defaultRoute = computed(() => { /* cocinero → /cocina, camarero → /barra */ })
