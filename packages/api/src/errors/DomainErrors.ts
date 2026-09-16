@@ -8,19 +8,19 @@ export class FirstNameRequiredError extends AppError {
 
 export class LastNameRequiredError extends AppError {
   constructor() {
-    super('El apellido es requerido')
+    super('El apellido es requerido!')
   }
 }
 
 export class PasswordHashRequiredError extends AppError {
-  constructor() {
-    super('El hash de la contraseña es requerido')
-  }
+    constructor() {
+        super('El hash de la contraseña es requerido')
+    }
 }
 
 export class InvalidRoleError extends AppError {
   constructor(message?: string) {
-    super(message ?? 'Rol inválido')
+    super(message ?? 'Rol inválido');
   }
 }
 
@@ -32,7 +32,7 @@ export class InvalidEmailError extends AppError {
 
 export class InvalidCredentialsError extends AppError {
   constructor() {
-    super('Credenciales inválidas')
+    super('Credenciales inválidas');
   }
 }
 
