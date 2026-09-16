@@ -2,163 +2,163 @@ import { AppError } from '@errors/AppError.js'
 
 export class FirstNameRequiredError extends AppError {
   constructor() {
-    super('First name is required')
+    super('El nombre es requerido')
   }
 }
 
 export class LastNameRequiredError extends AppError {
   constructor() {
-    super('Last name is required')
+    super('El apellido es requerido')
   }
 }
 
 export class PasswordHashRequiredError extends AppError {
   constructor() {
-    super('Password hash is required')
+    super('El hash de la contraseña es requerido')
   }
 }
 
 export class InvalidRoleError extends AppError {
   constructor(message?: string) {
-    super(message ?? 'Invalid role')
+    super(message ?? 'Rol inválido')
   }
 }
 
 export class InvalidEmailError extends AppError {
   constructor() {
-    super('Invalid email format')
+    super('Formato de correo electrónico inválido')
   }
 }
 
 export class InvalidCredentialsError extends AppError {
   constructor() {
-    super('Invalid credentials', 401)
+    super('Credenciales inválidas', 401)
   }
 }
 
 export class DuplicatedEmailError extends AppError {
   constructor() {
-    super('Email is already in use')
+    super('El correo electrónico ya está en uso')
   }
 }
 
 export class EmployeeNotFoundError extends AppError {
   constructor() {
-    super('Employee not found', 404)
+    super('Empleado no encontrado', 404)
   }
 }
 
 export class RestaurantNameRequiredError extends AppError {
   constructor() {
-    super('Restaurant name is required')
+    super('El nombre del restaurante es requerido')
   }
 }
 
 export class RestaurantAddressRequiredError extends AppError {
   constructor() {
-    super('Restaurant address is required')
+    super('La dirección del restaurante es requerida')
   }
 }
 
 export class RestaurantEmailRequiredError extends AppError {
   constructor() {
-    super('Restaurant email is required')
+    super('El correo electrónico del restaurante es requerido')
   }
 }
 
 export class RestaurantNotFoundError extends AppError {
   constructor() {
-    super('Restaurant not found', 404)
+    super('Restaurante no encontrado', 404)
   }
 }
 
 export class InvalidPhoneError extends AppError {
   constructor() {
-    super('Invalid phone format')
+    super('Formato de teléfono inválido')
   }
 }
 
 export class OwnerFirstNameRequiredError extends AppError {
   constructor() {
-    super('Owner first name is required')
+    super('El nombre del propietario es requerido')
   }
 }
 
 export class OwnerLastNameRequiredError extends AppError {
   constructor() {
-    super('Owner last name is required')
+    super('El apellido del propietario es requerido')
   }
 }
 
 export class IngredientNameRequiredError extends AppError {
   constructor() {
-    super('Ingredient name is required')
+    super('El nombre del ingrediente es requerido')
   }
 }
 
 export class IngredientNotFoundError extends AppError {
   constructor() {
-    super('Ingredient not found', 404)
+    super('Ingrediente no encontrado', 404)
   }
 }
 
 export class InvalidUnitError extends AppError {
   constructor(message?: string) {
-    super(message ?? 'Invalid unit')
+    super(message ?? 'Unidad inválida')
   }
 }
 
 export class NegativeStockError extends AppError {
   constructor() {
-    super('Stock cannot be negative')
+    super('El stock no puede ser negativo')
   }
 }
 
 export class RestaurantIdRequiredError extends AppError {
   constructor() {
-    super('Restaurant ID is required')
+    super('El ID del restaurante es requerido')
   }
 }
 
 export class DishNameRequiredError extends AppError {
   constructor() {
-    super('Dish name is required')
+    super('El nombre del plato es requerido')
   }
 }
 
 export class InvalidPriceError extends AppError {
   constructor() {
-    super('Price must be a positive number')
+    super('El precio debe ser un número positivo')
   }
 }
 
 export class InvalidCategoryError extends AppError {
   constructor(message?: string) {
-    super(message ?? 'Invalid category')
+    super(message ?? 'Categoría inválida')
   }
 }
 
 export class DishNotFoundError extends AppError {
   constructor() {
-    super('Dish not found', 404)
+    super('Plato no encontrado', 404)
   }
 }
 
 export class DatabaseNotInitializedError extends AppError {
   constructor() {
-    super('Database is not initialized. Call dbConfig.initialize() first.')
+    super('La base de datos no está inicializada. Llama primero a dbConfig.initialize().')
   }
 }
 
 export class InvalidOrderStatusError extends AppError {
   constructor(message?: string) {
-    super(message ?? 'Invalid order status')
+    super(message ?? 'Estado del pedido inválido')
   }
 }
 
 export class OrderNotFoundError extends AppError {
   constructor() {
-    super('Order not found')
+    super('Pedido no encontrado')
   }
 }
 
@@ -185,4 +185,3 @@ export class GithubIssueCreationError extends AppError {
     super('No se pudo crear la issue en GitHub', 502)
   }
 }
-
