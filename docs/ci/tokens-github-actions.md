@@ -62,6 +62,8 @@ claude setup-token
 
 > No lo pegues nunca en el código ni en el YAML: solo va en los secrets de GitHub.
 
+> ⚠️ **Cópialo sin saltos de línea.** El token son ~110 caracteres en una sola línea. Si la terminal lo muestra partido en dos y seleccionas con el ratón, te llevas un `\n` invisible en medio. GitHub lo guarda tal cual y el job falla. Es el error más fácil de cometer aquí — ver [Fallo por salto de línea](#fallo-por-salto-de-línea-en-el-secret).
+
 ### Paso 2 — Añadirlo como secret del repositorio
 
 1. Abre el repositorio en GitHub.
@@ -70,8 +72,10 @@ claude setup-token
 4. Pestaña `Secrets` → botón **`New repository secret`**.
 5. Rellena:
    - **Name:** `CLAUDE_CODE_OAUTH_TOKEN` (exacto, respeta mayúsculas)
-   - **Secret:** el token `sk-ant-oat01-...` que copiaste
+   - **Secret:** el token `sk-ant-oat01-...` que copiaste, **en una sola línea**
 6. **`Add secret`**.
+
+Antes de pulsar `Add secret`, comprueba en el cuadro de texto que el token ocupa una única línea y que no hay un salto ni espacios al final.
 
 Debe quedar listado como `CLAUDE_CODE_OAUTH_TOKEN` en *Repository secrets*. Su valor ya no se puede leer, solo reemplazar.
 
@@ -110,7 +114,7 @@ Este método se factura por uso de API, no por suscripción.
 | `Unable to get ACTIONS_ID_TOKEN_REQUEST_URL` | Falta `id-token: write` | Añadirlo a `permissions` del job |
 | `403 Resource not accessible by integration` | Falta `pull-requests: write` o los permisos globales están en *read-only* | Revisar pasos 1 y su comprobación adicional |
 | `401 OAuth access token is invalid` | El secret no existe, está mal escrito o el token caducó | Regenerar con `claude setup-token` y actualizar el secret |
-| `is_error:true` con `num_turns: 1`, `total_cost_usd: 0` y `modelUsage: {}` en menos de ~300 ms | **No es tu configuración**: bug abierto del SDK, aborta antes de llamar al modelo | Ver [Cuando el fallo no es del token](#cuando-el-fallo-no-es-del-token) |
+| `is_error:true` con `num_turns: 1`, `total_cost_usd: 0` y `modelUsage: {}` en menos de ~300 ms | Secret malformado (normalmente un salto de línea al pegarlo): el CLI rechaza la cabecera antes de llamar a la API | Ver [Fallo por salto de línea](#fallo-por-salto-de-línea-en-el-secret) |
 | El job de Claude no se ejecuta | `Build & Test` falló (`needs: build-and-test`) | Arreglar build/tests primero |
 | PR desde un **fork**: no hay token | GitHub no expone secrets a PRs de forks | Trabajar con ramas del propio repo |
 
@@ -131,29 +135,44 @@ Dos consecuencias prácticas:
 
 Para comprobar de verdad un cambio del workflow: mergéalo a `main` y abre luego un PR que *no* toque el fichero.
 
-## Cuando el fallo no es del token
+## Fallo por salto de línea en el secret
 
 Si el job de Claude falla así:
 
 ```json
-{"type":"result","subtype":"success","is_error":true,"duration_ms":101,
+{"type":"result","subtype":"success","is_error":true,"duration_ms":102,
  "num_turns":1,"total_cost_usd":0,"permission_denials_count":0,"modelUsage":{}}
 ```
 
-**no toques los secrets.** Esa firma (coste 0, `modelUsage` vacío, menos de ~300 ms) significa que el CLI arrancó y abortó *antes* de hablar con la API. Un token inválido de verdad tarda ~2 s y devuelve el texto `401 OAuth access token is invalid`.
+Coste 0, `modelUsage` vacío y menos de ~300 ms significan que el CLI abortó *antes* de llamar a la API. **La causa más probable es un secret malformado**, y ya ha pasado en este repo: el token se pegó partido en dos líneas y el CLI rechazó la cabecera HTTP en local, sin llegar a la red:
 
-Es un bug abierto de la acción: [claude-code-action#1720](https://github.com/anthropics/claude-code-action/issues/1720) y su duplicado [#1759](https://github.com/anthropics/claude-code-action/issues/1759), donde ya se descartaron token, versión de la acción, CLI propio, modelo, `--max-turns` y configuración del repo.
+```
+Invalid auth token · Invalid Authorization header value from CLAUDE_CODE_OAUTH_TOKEN:
+it contains a line break at character 80 (110 characters on 2 lines).
+```
 
-Cómo distinguirlo en 1 minuto:
+Cuidado con la intuición fácil: que falle en 100 ms **no** descarta el token. Un token que el servidor rechaza sí tarda ~2 s y devuelve `401`, pero uno malformado ni siquiera sale de la máquina.
 
-1. Añade `show_full_output: true` al paso de la acción (por defecto oculta el texto del error).
-2. Relanza el job y busca el mensaje:
-   - Aparece `401 OAuth access token is invalid` → **sí es el token**, regenéralo.
-   - No aparece ningún mensaje de error → es el bug del SDK, no hay arreglo desde aquí.
+### Cómo verlo
+
+El texto del error está oculto por defecto; la acción solo imprime `is_error:true`.
+
+1. Añade `show_full_output: true` al paso de la acción.
+2. Relanza el job y busca el campo `"result"` del JSON final:
+   - Menciona `line break`, `Invalid Authorization header` o `401` → **es el secret**. Vuelve a crearlo en una sola línea (ver [Rotación](#rotación)).
+   - No aparece ningún texto de error → entonces sí puede ser [claude-code-action#1720](https://github.com/anthropics/claude-code-action/issues/1720) / [#1759](https://github.com/anthropics/claude-code-action/issues/1759), un bug del SDK con esta misma firma y sin arreglo desde aquí.
 3. Quita `show_full_output` después: el repo es público y ese flag vuelca toda la salida a los logs.
 
-Mientras el bug siga abierto, el job lleva `continue-on-error: true` para que no bloquee los PRs.
+El job lleva `continue-on-error: true` para que un fallo de la revisión no bloquee los PR.
 
 ## Rotación
 
-El token OAuth caduca. Para renovarlo: `claude setup-token` de nuevo → `Settings` → `Secrets and variables` → `Actions` → clic en `CLAUDE_CODE_OAUTH_TOKEN` → `Update secret` → pegar el nuevo valor.
+El token OAuth caduca. Para renovarlo: `claude setup-token` de nuevo → `Settings` → `Secrets and variables` → `Actions` → clic en `CLAUDE_CODE_OAUTH_TOKEN` → `Update secret` → pegar el nuevo valor **en una sola línea**.
+
+Truco para no arrastrar saltos de línea ni espacios: copia el token al portapapeles sin pasar por la selección del ratón.
+
+```bash
+claude setup-token | tr -d '\n' | pbcopy   # macOS
+```
+
+Después pega con `Cmd+V` en el campo del secret.
