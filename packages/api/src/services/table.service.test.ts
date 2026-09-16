@@ -82,7 +82,7 @@ describe('TableService', () => {
 
         it('should throw RestaurantIdRequiredError when the restaurant is missing', async () => {
             await expect(service.create({ ...validInput, restaurantId: '' }))
-                .rejects.toThrow('Restaurant ID is required')
+                .rejects.toThrow('El ID del restaurante es requerido')
         })
 
         it('should throw DuplicatedTableNumberError for a repeated number in the same restaurant', async () => {
@@ -193,7 +193,7 @@ describe('TableService', () => {
 
         it('should throw RestaurantIdRequiredError when the restaurant is missing', async () => {
             await expect(service.findAvailableForParty('', 2))
-                .rejects.toThrow('Restaurant ID is required')
+                .rejects.toThrow('El ID del restaurante es requerido')
         })
     })
 
