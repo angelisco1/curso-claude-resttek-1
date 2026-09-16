@@ -27,8 +27,12 @@ export class ShellComponent {
     this.userRole() === 'camarero' || this.userRole() === 'manager'
   )
 
-  readonly canSeeSalon = computed(() => 
+  readonly canSeeSalon = computed(() =>
     this.userRole() === 'camarero' || this.userRole() === 'manager'
+  )
+
+  readonly canSeeMesas = computed(() =>
+    this.userRole() === 'camarero' || this.userRole() === 'manager' || this.userRole() === 'cocinero'
   )
 
   readonly defaultRoute = computed(() => {

@@ -40,6 +40,13 @@
           </a>
         }
 
+        @if (canSeeMesas()) {
+          <a routerLink="/mesas" routerLinkActive="active" class="nav-item">
+            <lucide-icon name="layout-grid" [size]="18"></lucide-icon>
+            <span>Mesas</span>
+          </a>
+        }
+
         <a routerLink="/reportar-incidencia" routerLinkActive="active" class="nav-item">
           <lucide-icon name="bug" [size]="18"></lucide-icon>
           <span>Reportar incidencia</span>

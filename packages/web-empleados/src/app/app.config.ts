@@ -3,7 +3,7 @@ import { provideRouter } from '@angular/router'
 import { provideHttpClient, withInterceptors } from '@angular/common/http'
 import {
   LucideAngularModule,
-  Utensils, Flame, Beer, Armchair, LogOut, ChevronRight, AlertCircle, Bug, Send, CheckCircle
+  Utensils, Flame, Beer, Armchair, LogOut, ChevronRight, AlertCircle, Bug, Send, CheckCircle, LayoutGrid, Users
 } from 'lucide-angular'
 
 import { routes } from './app.routes'
@@ -20,7 +20,7 @@ export const appConfig: ApplicationConfig = {
     ),
     importProvidersFrom(
       LucideAngularModule.pick({
-        Utensils, Flame, Beer, Armchair, LogOut, ChevronRight, AlertCircle, Bug, Send, CheckCircle
+        Utensils, Flame, Beer, Armchair, LogOut, ChevronRight, AlertCircle, Bug, Send, CheckCircle, LayoutGrid, Users
       })
     )
   ]

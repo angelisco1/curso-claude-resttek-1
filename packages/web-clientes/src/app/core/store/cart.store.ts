@@ -22,8 +22,36 @@ export class CartStore {
   private readonly _items = signal<CartItem[]>([])
   private readonly _restaurantId = signal<string | null>(null)
 
+  // Table the party is seated at. Outlives clear() — confirming an order empties
+  // the cart but the party stays at the table and may order again.
+  private readonly _tableId = signal<string | null>(null)
+  private readonly _tableNumber = signal<number | null>(null)
+  private readonly _partySize = signal<number | null>(null)
+  private readonly _tableRestaurantId = signal<string | null>(null)
+
   readonly items = this._items.asReadonly()
   readonly restaurantId = this._restaurantId.asReadonly()
+  readonly tableId = this._tableId.asReadonly()
+  readonly tableNumber = this._tableNumber.asReadonly()
+  readonly partySize = this._partySize.asReadonly()
+
+  selectTable(restaurantId: string, tableId: string, tableNumber: number, partySize: number): void {
+    this._tableRestaurantId.set(restaurantId)
+    this._tableId.set(tableId)
+    this._tableNumber.set(tableNumber)
+    this._partySize.set(partySize)
+  }
+
+  clearTable(): void {
+    this._tableRestaurantId.set(null)
+    this._tableId.set(null)
+    this._tableNumber.set(null)
+    this._partySize.set(null)
+  }
+
+  hasTableFor(restaurantId: string): boolean {
+    return this._tableRestaurantId() === restaurantId && this._tableId() !== null
+  }
 
   readonly total = computed(() =>
     this._items().reduce((sum, item) => sum + item.dish.price * item.quantity, 0)
@@ -36,6 +64,9 @@ export class CartStore {
   addItem(dish: Dish, quantity: number = 1, notes: string = ''): void {
     if (this._restaurantId() && this._restaurantId() !== dish.restaurantId) {
       this._items.set([])
+    }
+    if (this._tableRestaurantId() && this._tableRestaurantId() !== dish.restaurantId) {
+      this.clearTable()
     }
     this._restaurantId.set(dish.restaurantId)
 

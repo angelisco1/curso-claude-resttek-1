@@ -145,6 +145,19 @@ export class Database {
                 FOREIGN KEY(ingredient_id) REFERENCES ingredients(id)
             );
 
+            CREATE TABLE IF NOT EXISTS tables (
+                id TEXT PRIMARY KEY,
+                number INTEGER NOT NULL,
+                description TEXT,
+                capacity INTEGER NOT NULL,
+                status TEXT NOT NULL DEFAULT 'libre',
+                restaurant_id TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                UNIQUE(restaurant_id, number),
+                FOREIGN KEY(restaurant_id) REFERENCES restaurants(id)
+            );
+
             CREATE TABLE IF NOT EXISTS orders (
                 id TEXT PRIMARY KEY,
                 restaurant_id TEXT NOT NULL,

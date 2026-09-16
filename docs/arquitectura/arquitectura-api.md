@@ -51,7 +51,7 @@ contexts/employee/
 
 `contexts/shared/` no es un bounded context de negocio: contiene el value object `Email` y los middlewares y el `errorHandler` de Express.
 
-### 2. Por capas → `restaurant`, `dish`, `ingredient`, `order`
+### 2. Por capas → `restaurant`, `dish`, `ingredient`, `order`, `table`
 
 El resto de dominios **no** usan bounded contexts. Se organizan en carpetas transversales por tipo de fichero:
 
@@ -66,7 +66,7 @@ src/
 
 Con un fichero por dominio en cada carpeta: `models/dish.model.ts`, `services/dish.service.ts`, `repositories/dish.repository.ts`, etc.
 
-**Diferencia clave**: aquí no hay entidades de dominio con comportamiento. `Restaurant`, `Dish`, `Ingredient` y `Order` son `interface` planas; la validación vive en los servicios y en funciones sueltas del modelo.
+**Diferencia clave**: aquí no hay entidades de dominio con comportamiento. `Restaurant`, `Dish`, `Ingredient`, `Order` y `Table` son `interface` planas; la validación vive en los servicios y en funciones sueltas del modelo.
 
 ---
 
@@ -177,7 +177,7 @@ export class CreateEmployeeUseCase {
 
 ### Servicios (resto de dominios)
 
-En `restaurant`, `dish`, `ingredient` y `order` el equivalente al caso de uso es un **servicio con varios métodos**, no una clase por acción:
+En `restaurant`, `dish`, `ingredient`, `order` y `table` el equivalente al caso de uso es un **servicio con varios métodos**, no una clase por acción:
 
 ```tsx
 export class RestaurantService {
@@ -272,6 +272,9 @@ Todos cuelgan de `/api/v1`. La columna **Roles** indica qué valores de `req.use
 | `GET` | `/api/v1/public/restaurants` | Listado de restaurantes para la app de clientes |
 | `GET` | `/api/v1/public/restaurants/:id` | Detalle de restaurante |
 | `GET` | `/api/v1/public/restaurants/:restaurantId/dishes` | Carta pública del restaurante |
+| `GET` | `/api/v1/public/restaurants/:restaurantId/tables/available` | Mesas libres con capacidad suficiente. **Requiere `?partySize=`** (entero > 0, 400 si falta o es inválido) |
+
+`POST /api/v1/public/restaurants/:restaurantId/tables/:id/occupy` cuelga del mismo router pero **sí exige JWT** (sin filtro de rol): es la acción con la que un cliente se sienta en una mesa. Recibe `{ partySize }` y devuelve la mesa ya en estado `ocupada`.
 
 ### Restaurantes
 
@@ -310,6 +313,25 @@ Todos cuelgan de `/api/v1`. La columna **Roles** indica qué valores de `req.use
 
 Los ingredientes son **más restrictivos** que los platos: solo `admin` puede crear, editar o borrar.
 
+### Mesas
+
+| Método | Ruta | Roles |
+| --- | --- | --- |
+| `POST` | `/api/v1/restaurants/:restaurantId/tables` | admin, manager |
+| `GET` | `/api/v1/restaurants/:restaurantId/tables` | admin, manager, camarero, cocinero |
+| `GET` | `/api/v1/restaurants/:restaurantId/tables/:id` | admin, manager, camarero, cocinero |
+| `PUT` | `/api/v1/restaurants/:restaurantId/tables/:id` | admin, manager |
+| `PATCH` | `/api/v1/restaurants/:restaurantId/tables/:id/status` | admin, manager, camarero |
+| `DELETE` | `/api/v1/restaurants/:restaurantId/tables/:id` | admin, manager |
+
+El CRUD completo es cosa de `admin` y `manager`. `camarero` puede cambiar el estado pero no crear ni borrar mesas, y `cocinero` solo lee.
+
+`PATCH /status` permite cualquier transición entre `libre`, `ocupada` y `reservada` sin validar el estado de origen: es la vía por la que un camarero libera una mesa. La ruta pública `/occupy`, en cambio, solo acepta mesas en `libre` y comprueba que la capacidad alcance para el grupo (`TableNotAvailableError` / `TableCapacityExceededError`).
+
+El número de mesa es único por restaurante (`UNIQUE(restaurant_id, number)` en el esquema, más una comprobación previa en el servicio que devuelve `DuplicatedTableNumberError`). Dos restaurantes distintos sí pueden tener ambos una "mesa 1".
+
+---
+
 ### Pedidos
 
 | Método | Ruta | Roles |
@@ -325,6 +347,8 @@ Ninguna ruta de pedidos aplica `authorize()`: cualquier usuario autenticado pued
 `GET /orders/active` devuelve los pedidos del restaurante que tengan **al menos un ítem** en estado distinto de `entregado`.
 
 Al crear un pedido, el servicio **expande las cantidades**: un ítem con `quantity: 3` se guarda como 3 filas de `order_items` con `quantity: 1` cada una, para poder seguir el estado de cada unidad por separado.
+
+`orders.table_id` guarda el **id** de la mesa, no su número. Para que las vistas no tengan que resolverlo, el repositorio hace `LEFT JOIN tables` en las tres consultas de lectura y expone además `tableNumber` (o `null` si el pedido no tiene mesa). `OrderService.create()` devuelve `tableNumber: null`; el número aparece al releer el pedido.
 
 ### Reportes de bugs
 
@@ -359,7 +383,7 @@ El reporte **no se persiste**: no hay tabla `bug_reports` ni repositorio, GitHub
 | `GH_TOKEN` | Sí, para `POST /api/v1/bug-reports` | Token con permiso `issues: write` sobre el repositorio destino. Lo consume `gh` directamente |
 | `GITHUB_REPO` | No (`angelisco1/curso-claude-resttek-1`) | Valor de `--repo` en `gh issue create` |
 
-**Ojo**: hoy `server.ts` no carga ningún `.env`. `dotenv` figura como dependencia de `packages/api` pero no se importa en ninguna parte, así que estas variables tienen que estar exportadas en el entorno del proceso que arranca la API (`GH_TOKEN=... npm run dev:api`, o un `export` previo). Si en el futuro se añade `import 'dotenv/config'` a `server.ts`, pasarán a leerse de `packages/api/.env`, que está en `.gitignore`.
+`server.ts` carga `import 'dotenv/config'` al arrancar, así que estas variables se pueden definir en `packages/api/.env` (está en `.gitignore`) o exportarse directamente en el entorno del proceso.
 
 La máquina que ejecute la API necesita además el binario `gh` instalado y autenticado; si falta, el endpoint de reportes responde `502` y el resto de la API sigue funcionando.
 
@@ -438,6 +462,6 @@ La ruta del fichero se decide en el constructor: `:memory:` si `NODE_ENV=test`, 
 Con **Vitest** (`npm test` desde la raíz, o `npm run test:watch` dentro de `packages/api`). Los tests son unitarios y conviven con el código que prueban:
 
 - Dominio y casos de uso de `employee`, con dobles en `contexts/employee/application/mocks/`
-- Servicios y repositorios de `restaurant`, `ingredient` y `order`, con dobles en `repositories/mocks/`
+- Servicios y repositorios de `restaurant`, `ingredient`, `order` y `table`, con dobles en `repositories/mocks/`
 
 **No hay tests de integración HTTP.** `supertest` figura como dependencia de desarrollo pero no se usa en ningún test, así que las rutas, los middlewares y el `errorHandler` no están cubiertos.

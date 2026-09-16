@@ -1,0 +1,77 @@
+<div class="fade-in">
+  <div class="page-header">
+    <h1>Mesas</h1>
+    <a [routerLink]="['new']" class="btn btn-primary">
+      <lucide-icon name="plus" [size]="16"></lucide-icon>
+      Nueva mesa
+    </a>
+  </div>
+
+  @if (store.loading()) {
+    <div class="spinner"></div>
+  } @else if (store.error()) {
+    <div class="alert-error">{{ store.error() }}</div>
+  } @else if (store.tables().length === 0) {
+    <div class="empty-state card">
+      <lucide-icon name="armchair" [size]="40"></lucide-icon>
+      <p>No hay mesas para este restaurante</p>
+    </div>
+  } @else {
+    <div class="stats-row">
+      <div class="stat-chip">
+        <span class="stat-value">{{ store.tables().length }}</span>
+        <span class="stat-label">Mesas</span>
+      </div>
+      <div class="stat-chip">
+        <span class="stat-value stat-free">{{ store.freeCount() }}</span>
+        <span class="stat-label">Libres</span>
+      </div>
+      <div class="stat-chip">
+        <span class="stat-value stat-occupied">{{ store.occupiedCount() }}</span>
+        <span class="stat-label">Ocupadas</span>
+      </div>
+      <div class="stat-chip">
+        <span class="stat-value stat-reserved">{{ store.reservedCount() }}</span>
+        <span class="stat-label">Reservadas</span>
+      </div>
+      <div class="stat-chip">
+        <span class="stat-value">{{ store.totalCapacity() }}</span>
+        <span class="stat-label">Comensales</span>
+      </div>
+    </div>
+
+    <div class="card table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Nº</th>
+            <th>Descripción</th>
+            <th>Capacidad</th>
+            <th>Estado</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (t of store.tables(); track t.id) {
+            <tr>
+              <td class="table-number">Mesa {{ t.number }}</td>
+              <td class="table-description">{{ t.description || '—' }}</td>
+              <td>{{ t.capacity }} {{ t.capacity === 1 ? 'persona' : 'personas' }}</td>
+              <td><span class="badge badge-{{ t.status }}">{{ t.status }}</span></td>
+              <td>
+                <div class="actions">
+                  <a [routerLink]="[t.id, 'edit']" class="btn btn-secondary btn-sm">
+                    <lucide-icon name="edit" [size]="14"></lucide-icon>
+                  </a>
+                  <button class="btn btn-danger btn-sm" (click)="onDelete(t.id)">
+                    <lucide-icon name="trash-2" [size]="14"></lucide-icon>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>
