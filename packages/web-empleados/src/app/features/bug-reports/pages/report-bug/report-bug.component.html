@@ -1,0 +1,61 @@
+<div class="page-header">
+  <h1>Reportar incidencia</h1>
+</div>
+
+@if (store.created(); as created) {
+  <div class="card report-card">
+    <div class="success-block">
+      <lucide-icon name="check-circle" [size]="40" class="success-icon"></lucide-icon>
+      <p class="success-message">Reporte enviado. Se ha creado la issue #{{ created.issueNumber }}.</p>
+      <div class="success-actions">
+        <a [href]="created.issueUrl" target="_blank" rel="noopener" class="btn btn-secondary">
+          Ver issue
+        </a>
+        <button type="button" class="btn btn-primary" (click)="reportAnother()">
+          Enviar otro reporte
+        </button>
+      </div>
+    </div>
+  </div>
+} @else {
+  @if (store.error()) {
+    <div class="alert-error">{{ store.error() }}</div>
+  }
+
+  <form (ngSubmit)="onSubmit()" class="card report-card">
+    <p class="form-intro">
+      Describe el problema con el mayor detalle posible: qué estabas haciendo, qué esperabas
+      que pasara y qué pasó en su lugar.
+    </p>
+
+    <div class="privacy-notice">
+      <lucide-icon name="bug" [size]="16"></lucide-icon>
+      <span>No incluyas datos de clientes ni contraseñas: el reporte se publica en un repositorio público.</span>
+    </div>
+
+    <div class="form-group">
+      <label for="description">Descripción del problema</label>
+      <textarea
+        id="description"
+        name="description"
+        class="form-control description-input"
+        rows="10"
+        [maxlength]="maxLength"
+        [(ngModel)]="description"
+        placeholder="El botón de &quot;Listo&quot; en Cocina no marca el plato como servido"
+      ></textarea>
+      <span class="char-counter">{{ description.length }} / {{ maxLength }}</span>
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary" [disabled]="!canSubmit">
+        <lucide-icon name="send" [size]="16"></lucide-icon>
+        @if (store.loading()) {
+          Enviando...
+        } @else {
+          Enviar reporte
+        }
+      </button>
+    </div>
+  </form>
+}

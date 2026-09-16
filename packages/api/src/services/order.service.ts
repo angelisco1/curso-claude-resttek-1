@@ -40,6 +40,8 @@ export class OrderService {
             id: randomUUID(),
             restaurantId: request.restaurantId,
             tableId: request.tableId,
+            // Resolved by the repository when the order is read back.
+            tableNumber: null,
             clientId: request.clientId,
             createdAt: new Date(),
             items

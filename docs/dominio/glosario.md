@@ -15,13 +15,15 @@ Terminología del dominio y conceptos técnicos utilizados en el proyecto Restte
 | **Dish** | Plato de la carta de un restaurante. Tiene nombre, descripción, precio, categoría y puede estar disponible o no. |
 | **Ingredient** | Ingrediente utilizado en los platos. Tiene nombre, unidad de medida y stock actual. Pertenece a un restaurante. |
 | **DishIngredient** | Relación entre un plato y un ingrediente, con la cantidad necesaria. |
-| **Order** | Pedido realizado por un cliente. Contiene ítems (platos) y está asociado a un restaurante. |
+| **Table** | Mesa física de un restaurante. Tiene número, descripción, capacidad y estado. El número es único dentro de su restaurante. |
+| **Order** | Pedido realizado por un cliente. Contiene ítems (platos) y está asociado a un restaurante y, opcionalmente, a una mesa. |
 | **OrderItem** | Línea de un pedido: un plato con cantidad, notas opcionales y estado. |
 
 Dos particularidades del modelo que conviene tener presentes:
 
 - **Los clientes son `Employee`.** No hay entidad ni tabla de clientes: un cliente es una fila de `employees` con `role = 'cliente'` y `restaurant_id = null`. Por eso el login es el mismo endpoint para todos y la respuesta se llama `employee` incluso al registrarse como cliente.
 - **Cada unidad pedida es un `OrderItem`.** Al crear un pedido con 3 unidades de un plato se generan 3 filas con `quantity: 1`, para que cocina pueda marcar el estado de cada una por separado.
+- **La mesa se elige antes de la carta.** En `web-clientes` el cliente indica cuántos son, escoge entre las mesas libres con capacidad suficiente y la ocupa; solo entonces llega a la carta. `orders.table_id` guarda el id de esa mesa.
 
 ### Roles
 
@@ -34,6 +36,16 @@ Dos particularidades del modelo que conviene tener presentes:
 | **cliente** | Cliente final. Hace pedidos. | web-clientes |
 
 El valor almacenado es `manager`; "gerente" es solo su traducción en la interfaz. La columna **Acceso** describe lo que muestra el menú de cada app, no una restricción real: en `web-empleados` el filtrado por rol es de navegación y las tres vistas son accesibles por URL para cualquier usuario con sesión. Quien decide de verdad es el middleware `authorize()` de la API.
+
+### Estados de Mesa
+
+| Estado | Descripción | Quién lo cambia |
+| --- | --- | --- |
+| **libre** | Mesa disponible. Es el único estado en el que un cliente puede sentarse. | estado inicial; camarero o manager al liberarla |
+| **ocupada** | Hay comensales sentados. | el propio cliente al elegirla, o camarero/manager |
+| **reservada** | Mesa apartada para una reserva. No aparece entre las disponibles. | camarero, manager o admin |
+
+No hay liberación automática: una mesa sigue `ocupada` hasta que un empleado la devuelve a `libre` desde la vista de Mesas de `web-empleados`.
 
 ### Estados de Pedido
 
@@ -89,7 +101,7 @@ Las tres capas aplican al contexto `employee`:
 | **Application** | Casos de uso. Orquesta la lógica de negocio. |
 | **Infrastructure** | Implementaciones concretas: BD, HTTP, servicios externos. |
 
-En `restaurant`, `dish`, `ingredient` y `order` la separación equivalente es por carpetas: `models/`, `repositories/`, `services/`, `controllers/` y `routes/`.
+En `restaurant`, `dish`, `ingredient`, `order` y `table` la separación equivalente es por carpetas: `models/`, `repositories/`, `services/`, `controllers/` y `routes/`.
 
 ### Patrones
 

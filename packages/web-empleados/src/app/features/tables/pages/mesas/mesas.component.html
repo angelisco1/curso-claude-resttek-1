@@ -1,0 +1,80 @@
+<div class="page-header">
+  <h1>Mesas</h1>
+  <div class="legend">
+    <span class="legend-item"><i class="dot dot-libre"></i>{{ tableStore.freeCount() }} libres</span>
+    <span class="legend-item"><i class="dot dot-ocupada"></i>{{ tableStore.occupiedCount() }} ocupadas</span>
+    <span class="legend-item"><i class="dot dot-reservada"></i>{{ tableStore.reservedCount() }} reservadas</span>
+  </div>
+</div>
+
+@if (tableStore.loading() && tableStore.tables().length === 0) {
+  <div class="spinner"></div>
+}
+
+@if (tableStore.error()) {
+  <div class="alert-error">{{ tableStore.error() }}</div>
+}
+
+@if (!tableStore.loading() || tableStore.tables().length > 0) {
+  @if (tables().length === 0) {
+    <div class="empty-state">
+      <p>Este restaurante todavía no tiene mesas configuradas</p>
+    </div>
+  } @else {
+    <div class="tables-grid">
+      @for (table of tables(); track table.id) {
+        <div class="table-card status-{{ table.status }}">
+          <div class="table-header">
+            <span class="table-number">Mesa {{ table.number }}</span>
+            <span class="badge badge-{{ table.status }}">{{ table.status }}</span>
+          </div>
+
+          <div class="table-meta">
+            @if (table.description) {
+              <span class="table-description">{{ table.description }}</span>
+            }
+            <span class="table-capacity">
+              <lucide-icon name="users" [size]="14"></lucide-icon>
+              {{ table.capacity }} {{ table.capacity === 1 ? 'persona' : 'personas' }}
+            </span>
+          </div>
+
+          @if (table.orders.length > 0) {
+            <div class="table-orders">
+              @for (order of table.orders; track order.id) {
+                <div class="order-block">
+                  <div class="order-title">
+                    <span>Pedido #{{ shortOrderId(order.id) }}</span>
+                    <span class="order-pending">{{ pendingItems(order) }} pendientes</span>
+                  </div>
+                  @for (item of order.items; track item.id) {
+                    <div class="order-item">
+                      <span class="item-name">{{ item.quantity }}x {{ item.dishName || 'Producto' }}</span>
+                      <span class="badge badge-{{ item.status }}">{{ item.status }}</span>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          } @else if (table.status === 'ocupada') {
+            <div class="table-orders">
+              <p class="no-orders">Sin pedidos activos</p>
+            </div>
+          }
+
+          <div class="table-actions">
+            @for (s of statuses; track s) {
+              <button
+                class="btn btn-sm status-btn status-btn-{{ s }}"
+                [class.selected]="table.status === s"
+                [disabled]="table.status === s"
+                (click)="changeStatus(table.id, s)">
+                {{ s }}
+              </button>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  }
+}
