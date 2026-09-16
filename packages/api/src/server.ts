@@ -1,7 +1,10 @@
+import 'dotenv/config'
 import app from './app.js'
 import { dbConfig } from '@config/database.js'
 
 const PORT = process.env.PORT || 3000
+
+console.log('API_KEY:', process.env.API_KEY)
 
 const startServer = async () => {
     try {
