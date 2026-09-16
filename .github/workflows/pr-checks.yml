@@ -41,11 +41,8 @@ jobs:
     name: Claude — Docs Consistency Review
     needs: build-and-test
     runs-on: ubuntu-latest
-    # El job arranca y aborta en ~100ms con {subtype:"success", is_error:true,
-    # num_turns:1, total_cost_usd:0, modelUsage:{}} — un fallo del SDK antes de
-    # llamar al modelo, no un problema de configuración nuestro. Bug abierto
-    # upstream: anthropics/claude-code-action#1720 (y su duplicado #1759).
-    # Mientras siga abierto, la review no debe bloquear el PR.
+    # La revisión de docs es informativa: si falla, no debe bloquear el PR.
+    # Ver docs/ci/tokens-github-actions.md para diagnosticar fallos del job.
     continue-on-error: true
     permissions:
       contents: read
@@ -66,13 +63,6 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          # TEMPORAL (quitar tras diagnosticar): por defecto la acción oculta el
-          # texto del error y solo imprime "is_error:true". Esto revela el motivo
-          # real — si sale "401 OAuth access token is invalid" es el token; si no
-          # aparece ningún mensaje, es el bug del SDK (#1720).
-          # OJO: el repo es público y esto vuelca TODA la salida (incluidos
-          # resultados de herramientas) a unos logs visibles por cualquiera.
-          show_full_output: true
           claude_args: |
             --max-turns 15
             --allowedTools "Read,Grep,Glob,Bash(git diff:*),Bash(git log:*),Bash(git show:*),Bash(gh pr comment:*)"
