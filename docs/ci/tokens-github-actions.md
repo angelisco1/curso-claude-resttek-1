@@ -114,6 +114,23 @@ Este método se factura por uso de API, no por suscripción.
 | El job de Claude no se ejecuta | `Build & Test` falló (`needs: build-and-test`) | Arreglar build/tests primero |
 | PR desde un **fork**: no hay token | GitHub no expone secrets a PRs de forks | Trabajar con ramas del propio repo |
 
+## Los cambios en el workflow no hacen efecto hasta que se mergean
+
+La acción compara el fichero del workflow con el de la rama por defecto. Si no son idénticos, **se salta y reporta `success`**:
+
+```
+Skipping action due to workflow validation: Workflow validation failed.
+The workflow file must exist and have identical content to the version
+on the repository's default branch.
+```
+
+Dos consecuencias prácticas:
+
+1. Un PR que toca `pr-checks.yml` **nunca ejecuta** la revisión. Sale el check en verde, pero en 9 segundos y sin hacer nada: es un falso positivo, no una prueba de que el cambio funcione.
+2. Cualquier cambio en el job de Claude solo empieza a aplicarse **después de mergear a `main`**.
+
+Para comprobar de verdad un cambio del workflow: mergéalo a `main` y abre luego un PR que *no* toque el fichero.
+
 ## Cuando el fallo no es del token
 
 Si el job de Claude falla así:
