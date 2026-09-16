@@ -2,7 +2,7 @@
 
 Plataforma de gestión de restaurantes: panel de administración, app para empleados (cocina, barra y salón) y app de pedidos para clientes, sobre una API Node.js.
 
-Esta guía te lleva desde cero hasta tener el entorno funcionando y entender el flujo básico de la aplicación. Para el detalle de arquitectura y dominio, consulta [`docs/`](./docs).
+Esta guía te lleva desde cero hasta tener el entorno funcionando y entender el flujo básico de la aplicación. Para el detalle de arquitectura y dominio, consulta [`docs/`](./docs); para los tokens que necesita el CI, [`docs/ci/tokens-github-actions.md`](./docs/ci/tokens-github-actions.md).
 
 ---
 
